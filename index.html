@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FedEx Package Request Form</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* General Body Styles */
+        body {
+            font-family: 'FedEx Sans', Arial, sans-serif; /* Using a more FedEx-like font */
+            background-color: #4D148C; /* FedEx Purple */
+            color: #333; /* Darker text for better contrast */
+            text-align: center;
+            line-height: 1.6;
+            padding: 20px; /* Add some padding around the edges */
+        }
+
+        /* Container for the form */
+        .container {
+            max-width: 600px; /* Slightly wider for better spacing */
+            margin: 40px auto; /* More vertical margin */
+            padding: 30px; /* More internal padding */
+            background-color: #FFFFFF; /* White background for the form */
+            border-radius: 12px; /* Slightly more rounded corners */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+            border: 1px solid #FF6600; /* Orange border to tie in FedEx colors */
+        }
+
+        /* Headings */
+        h2 {
+            color: #4D148C; /* FedEx Purple for the heading */
+            margin-bottom: 25px;
+            font-size: 1.8em;
+        }
+
+        /* Form elements (inputs, selects, buttons, labels) */
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select {
+            width: calc(100% - 22px); /* Account for padding and border */
+            margin: 8px 0 15px 0; /* Adjust margin for better spacing */
+            padding: 12px; /* More padding for easier clicking/typing */
+            border: 1px solid #ddd; /* Light grey border */
+            border-radius: 6px; /* Slightly rounded corners */
+            box-sizing: border-box; /* Include padding in width */
+            font-size: 1em;
+            color: #333;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #FF6600; /* Highlight focus with FedEx Orange */
+            box-shadow: 0 0 5px rgba(255, 102, 0, 0.4);
+        }
+
+        label {
+            display: block; /* Make labels take full width */
+            text-align: left; /* Align labels to the left */
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #4D148C; /* FedEx Purple for labels */
+        }
+
+        /* Buttons */
+        button {
+            width: auto; /* Buttons can have natural width */
+            min-width: 150px; /* Ensure a minimum width for all buttons */
+            margin: 15px 10px 5px 10px; /* Spacing between buttons */
+            padding: 12px 25px;
+            background-color: #FF6600; /* FedEx Orange */
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: background-color 0.3s ease, transform 0.2s ease; /* Smooth transitions */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            background-color: #E65C00; /* Darker orange on hover */
+            transform: translateY(-2px); /* Slight lift effect */
+        }
+
+        button:active {
+            transform: translateY(0); /* Return to original position on click */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Specific button styles for clarity */
+        button.clear-button {
+            background-color: #999; /* Grey for clear to differentiate */
+        }
+
+        button.clear-button:hover {
+            background-color: #777;
+        }
+
+        button.add-location-button {
+            background-color: #4D148C; /* Purple for add location */
+        }
+
+        button.add-location-button:hover {
+            background-color: #3A106B;
+        }
+
+
+        /* Checkbox group */
+        .checkbox-group {
+            display: flex;
+            justify-content: center;
+            align-items: center; /* Align items vertically in the center */
+            margin: 15px 0 25px 0;
+            color: #4D148C; /* Purple text for checkbox labels */
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto; /* Let checkbox take its natural width */
+            margin: 0 5px; /* Spacing between checkbox and its label */
+            transform: scale(1.2); /* Slightly larger checkboxes */
+        }
+
+        .checkbox-group label {
+            display: inline-block; /* Keep labels inline with checkboxes */
+            font-weight: normal; /* Normal weight for checkbox labels */
+            color: #4D148C;
+            margin-right: 20px; /* Space between checkbox pairs */
+            margin-bottom: 0; /* Remove bottom margin from these labels */
+        }
+
+        .checkbox-group label:last-child {
+            margin-right: 0;
+        }
+
+        /* Dynamic fields (pickup/delivery) */
+        #pickupFields, #deliveryFields {
+            background-color: #f9f9f9; /* Light grey background for these sections */
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px dashed #FF6600; /* Dashed orange border */
+        }
+
+        /* Credit Card Info text */
+        .info-text {
+            font-size: 0.9em;
+            color: #666; /* Softer color for explanatory text */
+            margin-top: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>FedEx Office - Package Request Form</h2>
+
+        <label for="employeeName">Employee Name:</label>
+        <input type="text" id="employeeName" placeholder="Enter employee name" required>
+
+        <label for="badgeNumber">Badge Number:</label>
+        <input type="text" id="badgeNumber" placeholder="Enter badge number" required>
+
+        <label for="guestName">Guest Name:</label>
+        <input type="text" id="guestName" placeholder="Enter guest name">
+
+        <label for="phoneNumber">Phone Number:</label>
+        <input type="text" id="phoneNumber" placeholder="e.g., 555-123-4567">
+
+        <label for="company">Company (if applicable):</label>
+        <input type="text" id="company" placeholder="Enter company name">
+
+        <label>Request Type:</label>
+        <div class="checkbox-group">
+            <input type="checkbox" id="pickupCheckbox" onchange="toggleFields()">
+            <label for="pickupCheckbox">Pickup</label>
+            <input type="checkbox" id="deliveryCheckbox" onchange="toggleFields()">
+            <label for="deliveryCheckbox">Delivery</label>
+        </div>
+
+        <div id="pickupFields" style="display: none;">
+            <h3>Pickup Details</h3>
+            <label for="packageCount">Number of Packages:</label>
+            <input type="number" id="packageCount" min="1" placeholder="e.g., 1">
+
+            <label for="packageLocation">Package Location:</label>
+            <select id="packageLocation"></select>
+
+            <label for="boothNumber">Booth Number/Letter:</label>
+            <input type="text" id="boothNumber" placeholder="e.g., A123">
+
+            <label for="packageWeight">Weight of Each Package (approx.):</label>
+            <input type="text" id="packageWeight" placeholder="e.g., 5 lbs, 20 kg">
+
+            <label for="pickupDate">Pickup Date:</label>
+            <input type="date" id="pickupDate">
+
+            <label for="pickupTime">Pickup Time:</label>
+            <input type="text" id="pickupTime" placeholder="e.g., 2:00 PM">
+        </div>
+
+        <div id="deliveryFields" style="display: none;">
+            <h3>Delivery Details</h3>
+            <label for="deliveryPackageCount">Number of Packages:</label>
+            <input type="number" id="deliveryPackageCount" min="1" placeholder="e.g., 1">
+
+            <label for="deliveryPackageLocation">Package Storage Location:</label>
+            <select id="deliveryPackageLocation"></select>
+
+            <label for="deliveryPackageWeight">Weight of Each Package (approx.):</label>
+            <input type="text" id="deliveryPackageWeight" placeholder="e.g., 5 lbs, 20 kg">
+
+            <label for="deliveryDate">Delivery Date:</label>
+            <input type="date" id="deliveryDate">
+
+            <label for="deliveryTime">Delivery Time:</label>
+            <input type="text" id="deliveryTime" placeholder="e.g., 10:00 AM">
+
+            <label for="deliveryLocation">Final Delivery Location:</label>
+            <select id="deliveryLocation"></select>
+        </div>
+
+        <label for="paymentStatus">Payment Status:</label>
+        <select id="paymentStatus">
+            <option value="paid">Paid</option>
+            <option value="payLater">Will Pay Later</option>
+        </select>
+
+        <label for="accountNumber">FedEx Account Number:</label>
+        <input type="text" id="accountNumber" placeholder="Optional: Enter FedEx account number">
+
+        <div class="checkbox-group" style="margin-top: 20px;">
+            <input type="checkbox" id="creditCardProvided">
+            <label for="creditCardProvided">Credit Card Info Provided</label>
+        </div>
+        <p class="info-text">If collected, the information is stored securely in the safe.</p>
+
+        <button onclick="generatePDF()">Download as PDF</button>
+        <button class="clear-button" onclick="clearForm()">Clear Form</button>
+        <button class="add-location-button" onclick="addLocation()">Add New Location</button>
+    </div>
+
+    <script>
+        // Array of predefined locations
+        const predefinedLocations = ["Grand Oaks", "Cibolo", "Nelson Wolf", "Azelia"];
+
+        // Function to populate location dropdowns
+        function populateLocations() {
+            let deliverySelect = document.getElementById("deliveryLocation");
+            let pickupSelect = document.getElementById("packageLocation");
+            let deliveryStorageSelect = document.getElementById("deliveryPackageLocation");
+
+            // Clear existing options to prevent duplication
+            deliverySelect.innerHTML = "";
+            pickupSelect.innerHTML = "";
+            deliveryStorageSelect.innerHTML = "";
+
+            // Add a default "Select" option
+            const defaultOption = new Option("Select a location", "");
+            deliverySelect.add(defaultOption.cloneNode(true));
+            pickupSelect.add(defaultOption.cloneNode(true));
+            deliveryStorageSelect.add(defaultOption.cloneNode(true));
+
+
+            predefinedLocations.sort().forEach(location => { // Sort locations alphabetically
+                let option = new Option(location, location);
+                deliverySelect.add(option.cloneNode(true));
+                pickupSelect.add(option.cloneNode(true));
+                deliveryStorageSelect.add(option.cloneNode(true));
+            });
+        }
+
+        // Function to add a new location
+        function addLocation() {
+            let newLocation = prompt("Enter the new location name:");
+            if (newLocation) { // Check if user entered something
+                newLocation = newLocation.trim(); // Remove leading/trailing whitespace
+                // Capitalize first letter of each word
+                newLocation = newLocation.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
+                if (newLocation && !predefinedLocations.includes(newLocation)) {
+                    predefinedLocations.push(newLocation);
+                    populateLocations(); // Repopulate dropdowns with the new location
+                    alert(`"${newLocation}" has been added to the location list.`);
+                } else if (predefinedLocations.includes(newLocation)) {
+                    alert(`"${newLocation}" already exists in the location list.`);
+                }
+            }
+        }
+
+        // Function to toggle pickup and delivery fields based on checkbox selection
+        function toggleFields() {
+            const pickupChecked = document.getElementById("pickupCheckbox").checked;
+            const deliveryChecked = document.getElementById("deliveryCheckbox").checked;
+
+            document.getElementById("pickupFields").style.display = pickupChecked ? "block" : "none";
+            document.getElementById("deliveryFields").style.display = deliveryChecked ? "block" : "none";
+
+            // Ensure only one checkbox can be selected at a time for request type
+            if (pickupChecked && deliveryChecked) {
+                if (event.target.id === "pickupCheckbox") {
+                    document.getElementById("deliveryCheckbox").checked = false;
+                    document.getElementById("deliveryFields").style.display = "none";
+                } else {
+                    document.getElementById("pickupCheckbox").checked = false;
+                    document.getElementById("pickupFields").style.display = "none";
+                }
+            }
+        }
+
+        // Function to clear the form
+        function clearForm() {
+            // Confirm with the user before clearing
+            if (!confirm("Are you sure you want to clear the form?")) {
+                return; // Stop if user cancels
+            }
+
+            document.querySelectorAll("input, select").forEach(field => {
+                if (field.type === "text" || field.type === "number" || field.type === "date" || field.tagName === "SELECT") {
+                    field.value = "";
+                } else if (field.type === "checkbox") {
+                    field.checked = false;
+                }
+            });
+
+            // Reset dropdowns to the default "Select a location"
+            populateLocations();
+
+            // Hide dynamic fields
+            document.getElementById("pickupFields").style.display = "none";
+            document.getElementById("deliveryFields").style.display = "none";
+        }
+
+        // Function to generate the PDF
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Collect form data
+            const employeeName = document.getElementById("employeeName").value;
+            const badgeNumber = document.getElementById("badgeNumber").value;
+            const guestName = document.getElementById("guestName").value;
+            const phoneNumber = document.getElementById("phoneNumber").value;
+            const company = document.getElementById("company").value;
+            const paymentStatus = document.getElementById("paymentStatus").value;
+            const accountNumber = document.getElementById("accountNumber").value;
+            const creditCardProvided = document.getElementById("creditCardProvided").checked ? "Yes" : "No";
+
+            let requestType = "";
+            if (document.getElementById("pickupCheckbox").checked) {
+                requestType = "Pickup";
+            } else if (document.getElementById("deliveryCheckbox").checked) {
+                requestType = "Delivery";
+            } else {
+                alert("Please select a Request Type (Pickup or Delivery).");
+                return; // Stop PDF generation if no request type is selected
+            }
+
+            let formData = `
+FedEx Office - Package Request Form
+
+General Information:
+------------------------------------------
+Employee Name: ${employeeName || 'N/A'}
+Badge Number: ${badgeNumber || 'N/A'}
+Guest Name: ${guestName || 'N/A'}
+Phone Number: ${phoneNumber || 'N/A'}
+Company: ${company || 'N/A'}
+Request Type: ${requestType}
+Payment Status: ${paymentStatus === 'paid' ? 'Paid' : 'Will Pay Later'}
+FedEx Account Number: ${accountNumber || 'N/A'}
+Credit Card Info Provided: ${creditCardProvided}
+(If collected, the information is stored securely in the safe.)
+`;
+
+            if (document.getElementById("pickupCheckbox").checked) {
+                const packageCount = document.getElementById("packageCount").value;
+                const packageLocation = document.getElementById("packageLocation").value;
+                const boothNumber = document.getElementById("boothNumber").value;
+                const packageWeight = document.getElementById("packageWeight").value;
+                const pickupDate = document.getElementById("pickupDate").value;
+                const pickupTime = document.getElementById("pickupTime").value;
+
+                formData += `
+------------------------------------------
+Pickup Details:
+------------------------------------------
+Number of Packages: ${packageCount || 'N/A'}
+Package Location: ${packageLocation || 'N/A'}
+Booth Number/Letter: ${boothNumber || 'N/A'}
+Weight of Each Package: ${packageWeight || 'N/A'}
+Pickup Date: ${pickupDate || 'N/A'}
+Pickup Time: ${pickupTime || 'N/A'}
+`;
+            }
+
+            if (document.getElementById("deliveryCheckbox").checked) {
+                const deliveryPackageCount = document.getElementById("deliveryPackageCount").value;
+                const deliveryPackageLocation = document.getElementById("deliveryPackageLocation").value;
+                const deliveryPackageWeight = document.getElementById("deliveryPackageWeight").value;
+                const deliveryDate = document.getElementById("deliveryDate").value;
+                const deliveryTime = document.getElementById("deliveryTime").value;
+                const deliveryLocation = document.getElementById("deliveryLocation").value;
+
+                formData += `
+------------------------------------------
+Delivery Details:
+------------------------------------------
+Number of Packages: ${deliveryPackageCount || 'N/A'}
+Package Storage Location: ${deliveryPackageLocation || 'N/A'}
+Weight of Each Package: ${deliveryPackageWeight || 'N/A'}
+Delivery Date: ${deliveryDate || 'N/A'}
+Delivery Time: ${deliveryTime || 'N/A'}
+Final Delivery Location: ${deliveryLocation || 'N/A'}
+`;
+            }
+
+            // Split text into lines to fit PDF page
+            const lines = doc.splitTextToSize(formData, 180); // 180 is approximate width for A4 page
+
+            doc.setFontSize(11);
+            doc.text(lines, 10, 10);
+            doc.save("FedEx_Package_Request_Form.pdf");
+        }
+
+        // Initialize locations when the page loads
+        populateLocations();
+    </script>
+</body>
+</html>
