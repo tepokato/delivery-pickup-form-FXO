@@ -308,6 +308,29 @@
             border: 1px dashed var(--border);
         }
 
+        .package-weights-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+
+        .package-weights-list .weights-empty {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 0;
+            padding: 0.5rem 0;
+        }
+
+        .package-weights-field .field-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--fedex-purple);
+        }
+
+        .package-weight-row label {
+            font-size: 0.8rem;
+        }
+
         .toggle-row {
             display: flex;
             align-items: flex-start;
@@ -561,9 +584,11 @@
                                 <label for="boothNumber">Booth number / letter</label>
                                 <input type="text" id="boothNumber" name="boothNumber" placeholder="e.g. A123">
                             </div>
-                            <div class="field" data-field="packageWeight">
-                                <label for="packageWeight">Weight (approx.)</label>
-                                <input type="text" id="packageWeight" name="packageWeight" placeholder="e.g. 5 lbs">
+                            <div class="field package-weights-field" data-field="pickupPackageWeights" style="grid-column: 1 / -1;">
+                                <span class="field-label">Weight per package</span>
+                                <p class="field-hint">Set the number of packages above — one weight field appears for each package.</p>
+                                <div id="pickupPackageWeights" class="package-weights-list" aria-live="polite"></div>
+                                <span class="field-error">Enter a weight for every package</span>
                             </div>
                             <div class="field" data-field="pickupDate">
                                 <label for="pickupDate">Pickup date</label>
@@ -588,9 +613,11 @@
                                 <select id="deliveryPackageLocation" name="deliveryPackageLocation"></select>
                                 <span class="field-error">Select a storage location</span>
                             </div>
-                            <div class="field" data-field="deliveryPackageWeight">
-                                <label for="deliveryPackageWeight">Weight (approx.)</label>
-                                <input type="text" id="deliveryPackageWeight" name="deliveryPackageWeight" placeholder="e.g. 5 lbs">
+                            <div class="field package-weights-field" data-field="deliveryPackageWeights" style="grid-column: 1 / -1;">
+                                <span class="field-label">Weight per package</span>
+                                <p class="field-hint">Set the number of packages above — one weight field appears for each package.</p>
+                                <div id="deliveryPackageWeights" class="package-weights-list" aria-live="polite"></div>
+                                <span class="field-error">Enter a weight for every package</span>
                             </div>
                             <div class="field" data-field="deliveryDate">
                                 <label for="deliveryDate">Delivery date</label>
@@ -759,7 +786,118 @@
             placeholder.style.display = type ? "none" : "block";
         }
 
-        function validateForm() {
+        const MAX_PACKAGES = 50;
+
+        function parsePackageCount(value) {
+            const n = parseInt(String(value).trim(), 10);
+            if (!Number.isFinite(n) || n < 1) {
+                return 0;
+            }
+            return Math.min(n, MAX_PACKAGES);
+        }
+
+        function renderPackageWeightInputs(containerId, count) {
+            const container = document.getElementById(containerId);
+            const saved = {};
+            container.querySelectorAll("input[data-package-weight]").forEach((input) => {
+                saved[input.dataset.packageIndex] = input.value;
+            });
+            container.innerHTML = "";
+
+            if (count < 1) {
+                const hint = document.createElement("p");
+                hint.className = "weights-empty";
+                hint.textContent = "Enter the number of packages to add weight fields.";
+                container.appendChild(hint);
+                return;
+            }
+
+            for (let i = 1; i <= count; i++) {
+                const row = document.createElement("div");
+                row.className = "field package-weight-row";
+                row.dataset.field = containerId + "Weight" + i;
+
+                const label = document.createElement("label");
+                const inputId = containerId + "Weight" + i;
+                label.setAttribute("for", inputId);
+                label.textContent = "Package " + i + " weight";
+
+                const input = document.createElement("input");
+                input.type = "text";
+                input.id = inputId;
+                input.name = inputId;
+                input.placeholder = "e.g. 5 lbs";
+                input.setAttribute("data-package-weight", "true");
+                input.dataset.packageIndex = String(i);
+                if (saved[String(i)] !== undefined) {
+                    input.value = saved[String(i)];
+                }
+
+                row.appendChild(label);
+                row.appendChild(input);
+                container.appendChild(row);
+            }
+        }
+
+        function syncPickupPackageWeights() {
+            const count = parsePackageCount(document.getElementById("packageCount").value);
+            renderPackageWeightInputs("pickupPackageWeights", count);
+        }
+
+        function syncDeliveryPackageWeights() {
+            const count = parsePackageCount(document.getElementById("deliveryPackageCount").value);
+            renderPackageWeightInputs("deliveryPackageWeights", count);
+        }
+
+        function collectPackageWeights(containerId) {
+            const container = document.getElementById(containerId);
+            return [...container.querySelectorAll("input[data-package-weight]")].map((input) => input.value.trim());
+        }
+
+        function formatPackageWeightsForPdf(containerId) {
+            const weights = collectPackageWeights(containerId);
+            if (weights.length === 0) {
+                return "N/A";
+            }
+            return weights.map((weight, index) => "Package " + (index + 1) + ": " + (weight || "N/A")).join("\n");
+        }
+
+        function validatePackageWeights(containerId, fieldKey, label, messages) {
+            const countInputId = containerId === "pickupPackageWeights" ? "packageCount" : "deliveryPackageCount";
+            const count = parsePackageCount(document.getElementById(countInputId).value);
+
+            if (count < 1) {
+                return;
+            }
+
+            if (containerId === "pickupPackageWeights") {
+                syncPickupPackageWeights();
+            } else {
+                syncDeliveryPackageWeights();
+            }
+
+            const container = document.getElementById(containerId);
+            const inputs = [...container.querySelectorAll("input[data-package-weight]")];
+            let hasMissing = false;
+
+            inputs.forEach((input) => {
+                if (!input.value.trim()) {
+                    hasMissing = true;
+                    input.closest(".package-weight-row")?.classList.add("invalid");
+                }
+            });
+
+            if (hasMissing || inputs.length !== count) {
+                setFieldInvalid(fieldKey, true);
+                messages.push(label);
+                const firstEmpty = inputs.find((input) => !input.value.trim());
+                if (firstEmpty) {
+                    firstEmpty.focus();
+                }
+            }
+        }
+
+                function validateForm() {
             clearValidation();
             const messages = [];
 
@@ -785,6 +923,12 @@
                     setFieldInvalid("packageLocation", true);
                     messages.push("Select a package location for pickup");
                 }
+                validatePackageWeights(
+                    "pickupPackageWeights",
+                    "pickupPackageWeights",
+                    "Enter a weight for each pickup package",
+                    messages
+                );
             } else if (requestType === "delivery") {
                 if (!document.getElementById("deliveryPackageLocation").value) {
                     setFieldInvalid("deliveryPackageLocation", true);
@@ -794,6 +938,12 @@
                     setFieldInvalid("deliveryLocation", true);
                     messages.push("Select a final delivery location");
                 }
+                validatePackageWeights(
+                    "deliveryPackageWeights",
+                    "deliveryPackageWeights",
+                    "Enter a weight for each delivery package",
+                    messages
+                );
             }
 
             if (messages.length > 0) {
@@ -841,6 +991,8 @@
             clearValidation();
             updateRequestPanels();
             populateLocations();
+            syncPickupPackageWeights();
+            syncDeliveryPackageWeights();
         }
 
         function generatePDF() {
@@ -878,14 +1030,14 @@
                     "Number of Packages: " + (document.getElementById("packageCount").value || "N/A") + "\n" +
                     "Package Location: " + (document.getElementById("packageLocation").value || "N/A") + "\n" +
                     "Booth Number/Letter: " + (document.getElementById("boothNumber").value || "N/A") + "\n" +
-                    "Weight of Each Package: " + (document.getElementById("packageWeight").value || "N/A") + "\n" +
+                    "Package Weights:\n" + formatPackageWeightsForPdf("pickupPackageWeights") + "\n" +
                     "Pickup Date: " + (document.getElementById("pickupDate").value || "N/A") + "\n" +
                     "Pickup Time: " + (document.getElementById("pickupTime").value || "N/A") + "\n";
             } else {
                 formData += "\n------------------------------------------\nDelivery Details:\n------------------------------------------\n" +
                     "Number of Packages: " + (document.getElementById("deliveryPackageCount").value || "N/A") + "\n" +
                     "Package Storage Location: " + (document.getElementById("deliveryPackageLocation").value || "N/A") + "\n" +
-                    "Weight of Each Package: " + (document.getElementById("deliveryPackageWeight").value || "N/A") + "\n" +
+                    "Package Weights:\n" + formatPackageWeightsForPdf("deliveryPackageWeights") + "\n" +
                     "Delivery Date: " + (document.getElementById("deliveryDate").value || "N/A") + "\n" +
                     "Delivery Time: " + (document.getElementById("deliveryTime").value || "N/A") + "\n" +
                     "Final Delivery Location: " + (document.getElementById("deliveryLocation").value || "N/A") + "\n";
@@ -945,8 +1097,28 @@
             });
         });
 
+        document.getElementById("packageCount").addEventListener("input", syncPickupPackageWeights);
+        document.getElementById("packageCount").addEventListener("change", syncPickupPackageWeights);
+        document.getElementById("deliveryPackageCount").addEventListener("input", syncDeliveryPackageWeights);
+        document.getElementById("deliveryPackageCount").addEventListener("change", syncDeliveryPackageWeights);
+
+        document.getElementById("pickupPackageWeights").addEventListener("input", (e) => {
+            if (e.target.matches("input[data-package-weight]")) {
+                e.target.closest(".package-weight-row")?.classList.remove("invalid");
+                document.querySelector('.field[data-field="pickupPackageWeights"]')?.classList.remove("invalid");
+            }
+        });
+        document.getElementById("deliveryPackageWeights").addEventListener("input", (e) => {
+            if (e.target.matches("input[data-package-weight]")) {
+                e.target.closest(".package-weight-row")?.classList.remove("invalid");
+                document.querySelector('.field[data-field="deliveryPackageWeights"]')?.classList.remove("invalid");
+            }
+        });
+
         populateLocations();
         updateRequestPanels();
+        syncPickupPackageWeights();
+        syncDeliveryPackageWeights();
     </script>
 </body>
 </html>
