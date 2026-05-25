@@ -6,427 +6,947 @@
     <title>FedEx Package Request Form</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        /* General Body Styles */
+        :root {
+            --fedex-purple: #4D148C;
+            --fedex-purple-dark: #3A106B;
+            --fedex-orange: #FF6600;
+            --fedex-orange-dark: #E65C00;
+            --surface: #ffffff;
+            --surface-muted: #f6f4f9;
+            --border: #e2dde8;
+            --text: #1a1a1a;
+            --text-muted: #5c5c5c;
+            --error: #b91c1c;
+            --error-bg: #fef2f2;
+            --success: #166534;
+            --success-bg: #f0fdf4;
+            --radius: 10px;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'FedEx Sans', Arial, sans-serif; /* Using a more FedEx-like font */
-            background-color: #4D148C; /* FedEx Purple */
-            color: #333; /* Darker text for better contrast */
+            margin: 0;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+            background: linear-gradient(160deg, var(--fedex-purple) 0%, #2d0c52 100%);
+            color: var(--text);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        .page-header {
+            padding: 1.25rem 1rem 0.5rem;
             text-align: center;
-            line-height: 1.6;
-            padding: 20px; /* Add some padding around the edges */
+            color: #fff;
         }
 
-        /* Container for the form */
-        .container {
-            max-width: 600px; /* Slightly wider for better spacing */
-            margin: 40px auto; /* More vertical margin */
-            padding: 30px; /* More internal padding */
-            background-color: #FFFFFF; /* White background for the form */
-            border-radius: 12px; /* Slightly more rounded corners */
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
-            border: 1px solid #FF6600; /* Orange border to tie in FedEx colors */
+        .page-header h1 {
+            margin: 0;
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
         }
 
-        /* Headings */
-        h2 {
-            color: #4D148C; /* FedEx Purple for the heading */
-            margin-bottom: 25px;
-            font-size: 1.8em;
+        .page-header p {
+            margin: 0.35rem 0 0;
+            font-size: 0.9rem;
+            opacity: 0.9;
         }
 
-        /* Form elements (inputs, selects, buttons, labels) */
-        input[type="text"],
-        input[type="number"],
-        input[type="date"],
-        select {
-            width: calc(100% - 22px); /* Account for padding and border */
-            margin: 8px 0 15px 0; /* Adjust margin for better spacing */
-            padding: 12px; /* More padding for easier clicking/typing */
-            border: 1px solid #ddd; /* Light grey border */
-            border-radius: 6px; /* Slightly rounded corners */
-            box-sizing: border-box; /* Include padding in width */
-            font-size: 1em;
-            color: #333;
+        .app {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 0 1rem 6rem;
         }
 
-        input:focus, select:focus {
+        @media (min-width: 640px) {
+            .app {
+                padding-bottom: 2rem;
+            }
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 14px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-top: 0.75rem;
+        }
+
+        .status-banner {
+            display: none;
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .status-banner.visible {
+            display: block;
+        }
+
+        .status-banner.error {
+            background: var(--error-bg);
+            color: var(--error);
+        }
+
+        .status-banner.success {
+            background: var(--success-bg);
+            color: var(--success);
+        }
+
+        .status-banner ul {
+            margin: 0.35rem 0 0;
+            padding-left: 1.25rem;
+        }
+
+        form {
+            padding: 0;
+        }
+
+        .section {
+            padding: 1.25rem 1.25rem 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section:last-of-type {
+            border-bottom: none;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .section-number {
+            flex-shrink: 0;
+            width: 1.75rem;
+            height: 1.75rem;
+            border-radius: 50%;
+            background: var(--fedex-purple);
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .section-title {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--fedex-purple);
+        }
+
+        .section-desc {
+            margin: 0.15rem 0 0;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .field-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        @media (min-width: 520px) {
+            .field-grid.two-col {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .field label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--fedex-purple);
+        }
+
+        .field label .required {
+            color: var(--fedex-orange);
+        }
+
+        .field-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: -0.15rem;
+        }
+
+        .field input[type="text"],
+        .field input[type="number"],
+        .field input[type="date"],
+        .field input[type="tel"],
+        .field select {
+            width: 100%;
+            padding: 0.65rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            color: var(--text);
+            background: #fff;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .field input:focus,
+        .field select:focus {
             outline: none;
-            border-color: #FF6600; /* Highlight focus with FedEx Orange */
-            box-shadow: 0 0 5px rgba(255, 102, 0, 0.4);
+            border-color: var(--fedex-orange);
+            box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.2);
         }
 
-        label {
-            display: block; /* Make labels take full width */
-            text-align: left; /* Align labels to the left */
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #4D148C; /* FedEx Purple for labels */
+        .field.invalid input,
+        .field.invalid select {
+            border-color: var(--error);
+            background: var(--error-bg);
         }
 
-        /* Buttons */
-        button {
-            width: auto; /* Buttons can have natural width */
-            min-width: 150px; /* Ensure a minimum width for all buttons */
-            margin: 15px 10px 5px 10px; /* Spacing between buttons */
-            padding: 12px 25px;
-            background-color: #FF6600; /* FedEx Orange */
-            color: white;
-            border: none;
-            border-radius: 6px;
+        .field-error {
+            display: none;
+            font-size: 0.75rem;
+            color: var(--error);
+            font-weight: 500;
+        }
+
+        .field.invalid .field-error {
+            display: block;
+        }
+
+        .request-type {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .request-type input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .request-type label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            padding: 1rem 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
             cursor: pointer;
-            font-size: 1.1em;
-            transition: background-color 0.3s ease, transform 0.2s ease; /* Smooth transitions */
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            font-weight: 600;
+            color: var(--fedex-purple);
+            background: var(--surface-muted);
+            transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+            text-align: center;
         }
 
-        button:hover {
-            background-color: #E65C00; /* Darker orange on hover */
-            transform: translateY(-2px); /* Slight lift effect */
+        .request-type label .icon {
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+
+        .request-type input:focus-visible + label {
+            outline: 2px solid var(--fedex-orange);
+            outline-offset: 2px;
+        }
+
+        .request-type input:checked + label {
+            border-color: var(--fedex-orange);
+            background: #fff5eb;
+            box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.15);
+        }
+
+        .request-type.invalid {
+            outline: 2px solid var(--error);
+            border-radius: var(--radius);
+        }
+
+        .details-panel {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--surface-muted);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            animation: fadeIn 0.2s ease;
+        }
+
+        .details-panel.visible {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .details-panel h3 {
+            margin: 0 0 1rem;
+            font-size: 0.95rem;
+            color: var(--fedex-purple);
+        }
+
+        .empty-hint {
+            padding: 1rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            background: var(--surface-muted);
+            border-radius: var(--radius);
+            border: 1px dashed var(--border);
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.65rem;
+            padding: 0.75rem;
+            background: var(--surface-muted);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+
+        .toggle-row input[type="checkbox"] {
+            width: 1.15rem;
+            height: 1.15rem;
+            margin-top: 0.2rem;
+            accent-color: var(--fedex-orange);
+            flex-shrink: 0;
+        }
+
+        .toggle-row label {
+            font-weight: 600;
+            color: var(--fedex-purple);
+            cursor: pointer;
+        }
+
+        .toggle-row .field-hint {
+            margin-top: 0.2rem;
+        }
+
+        .location-tools {
+            margin-top: 0.75rem;
+        }
+
+        .location-add {
+            display: none;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .location-add.visible {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .location-add input {
+            flex: 1;
+            min-width: 140px;
+            padding: 0.55rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 0.95rem;
+        }
+
+        .btn-link {
+            background: none;
+            border: none;
+            color: var(--fedex-purple);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .btn-link:hover {
+            color: var(--fedex-orange);
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+            padding: 1.25rem;
+            background: var(--surface-muted);
+            border-top: 1px solid var(--border);
+        }
+
+        .actions-sticky {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
+            padding: 0.85rem 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        @media (min-width: 640px) {
+            .actions-sticky {
+                display: none;
+            }
+        }
+
+        @media (max-width: 639px) {
+            .actions-in-card {
+                display: none;
+            }
+        }
+
+        button {
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            padding: 0.7rem 1.1rem;
+            transition: background 0.15s, transform 0.1s;
         }
 
         button:active {
-            transform: translateY(0); /* Return to original position on click */
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            transform: scale(0.98);
         }
 
-        /* Specific button styles for clarity */
-        button.clear-button {
-            background-color: #999; /* Grey for clear to differentiate */
+        .btn-primary {
+            flex: 1;
+            background: var(--fedex-orange);
+            color: #fff;
+            min-height: 44px;
         }
 
-        button.clear-button:hover {
-            background-color: #777;
+        .btn-primary:hover {
+            background: var(--fedex-orange-dark);
         }
 
-        button.add-location-button {
-            background-color: #4D148C; /* Purple for add location */
+        .btn-secondary {
+            background: #fff;
+            color: var(--text);
+            border: 1px solid var(--border);
         }
 
-        button.add-location-button:hover {
-            background-color: #3A106B;
+        .btn-secondary:hover {
+            background: var(--surface-muted);
         }
 
-
-        /* Checkbox group */
-        .checkbox-group {
-            display: flex;
-            justify-content: center;
-            align-items: center; /* Align items vertically in the center */
-            margin: 15px 0 25px 0;
-            color: #4D148C; /* Purple text for checkbox labels */
+        .btn-ghost {
+            background: transparent;
+            color: var(--fedex-purple);
+            border: 1px solid var(--fedex-purple);
         }
 
-        .checkbox-group input[type="checkbox"] {
-            width: auto; /* Let checkbox take its natural width */
-            margin: 0 5px; /* Spacing between checkbox and its label */
-            transform: scale(1.2); /* Slightly larger checkboxes */
-        }
-
-        .checkbox-group label {
-            display: inline-block; /* Keep labels inline with checkboxes */
-            font-weight: normal; /* Normal weight for checkbox labels */
-            color: #4D148C;
-            margin-right: 20px; /* Space between checkbox pairs */
-            margin-bottom: 0; /* Remove bottom margin from these labels */
-        }
-
-        .checkbox-group label:last-child {
-            margin-right: 0;
-        }
-
-        /* Dynamic fields (pickup/delivery) */
-        #pickupFields, #deliveryFields {
-            background-color: #f9f9f9; /* Light grey background for these sections */
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-            border: 1px dashed #FF6600; /* Dashed orange border */
-        }
-
-        /* Credit Card Info text */
-        .info-text {
-            font-size: 0.9em;
-            color: #666; /* Softer color for explanatory text */
-            margin-top: 5px;
-            margin-bottom: 20px;
-            text-align: center;
+        .btn-ghost:hover {
+            background: rgba(77, 20, 140, 0.06);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>FedEx Office - Package Request Form</h2>
+    <header class="page-header">
+        <h1>FedEx Office</h1>
+        <p>Package pickup &amp; delivery request</p>
+    </header>
 
-        <label for="employeeName">Employee Name:</label>
-        <input type="text" id="employeeName" placeholder="Enter employee name" required>
+    <main class="app">
+        <div class="card">
+            <div id="statusBanner" class="status-banner" role="alert" aria-live="polite"></div>
 
-        <label for="badgeNumber">Badge Number:</label>
-        <input type="text" id="badgeNumber" placeholder="Enter badge number" required>
+            <form id="packageForm" novalidate>
+                <section class="section" aria-labelledby="section-staff">
+                    <div class="section-header">
+                        <span class="section-number" aria-hidden="true">1</span>
+                        <div>
+                            <h2 class="section-title" id="section-staff">Staff information</h2>
+                            <p class="section-desc">Required before generating the PDF</p>
+                        </div>
+                    </div>
+                    <div class="field-grid two-col">
+                        <div class="field" data-field="employeeName">
+                            <label for="employeeName">Employee name <span class="required">*</span></label>
+                            <input type="text" id="employeeName" name="employeeName" autocomplete="name" placeholder="Full name" required>
+                            <span class="field-error">Enter your name</span>
+                        </div>
+                        <div class="field" data-field="badgeNumber">
+                            <label for="badgeNumber">Badge number <span class="required">*</span></label>
+                            <input type="text" id="badgeNumber" name="badgeNumber" inputmode="numeric" placeholder="e.g. 12345" required>
+                            <span class="field-error">Enter your badge number</span>
+                        </div>
+                    </div>
+                </section>
 
-        <label for="guestName">Guest Name:</label>
-        <input type="text" id="guestName" placeholder="Enter guest name">
+                <section class="section" aria-labelledby="section-guest">
+                    <div class="section-header">
+                        <span class="section-number" aria-hidden="true">2</span>
+                        <div>
+                            <h2 class="section-title" id="section-guest">Guest information</h2>
+                            <p class="section-desc">Who the package is for</p>
+                        </div>
+                    </div>
+                    <div class="field-grid two-col">
+                        <div class="field" data-field="guestName">
+                            <label for="guestName">Guest name</label>
+                            <input type="text" id="guestName" name="guestName" placeholder="Customer name">
+                        </div>
+                        <div class="field" data-field="phoneNumber">
+                            <label for="phoneNumber">Phone number</label>
+                            <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="555-123-4567" autocomplete="tel">
+                        </div>
+                        <div class="field" style="grid-column: 1 / -1;" data-field="company">
+                            <label for="company">Company <span class="field-hint">(optional)</span></label>
+                            <input type="text" id="company" name="company" placeholder="Company name if applicable">
+                        </div>
+                    </div>
+                </section>
 
-        <label for="phoneNumber">Phone Number:</label>
-        <input type="text" id="phoneNumber" placeholder="e.g., 555-123-4567">
+                <section class="section" aria-labelledby="section-request">
+                    <div class="section-header">
+                        <span class="section-number" aria-hidden="true">3</span>
+                        <div>
+                            <h2 class="section-title" id="section-request">Request type</h2>
+                            <p class="section-desc">Choose pickup or delivery</p>
+                        </div>
+                    </div>
+                    <div class="request-type" id="requestTypeGroup" role="radiogroup" aria-label="Request type">
+                        <div>
+                            <input type="radio" name="requestType" id="requestPickup" value="pickup">
+                            <label for="requestPickup">
+                                <span class="icon" aria-hidden="true">📦</span>
+                                Pickup
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" name="requestType" id="requestDelivery" value="delivery">
+                            <label for="requestDelivery">
+                                <span class="icon" aria-hidden="true">🚚</span>
+                                Delivery
+                            </label>
+                        </div>
+                    </div>
+                    <span class="field-error" id="requestTypeError" style="display: none; margin-top: 0.5rem;">Select pickup or delivery</span>
 
-        <label for="company">Company (if applicable):</label>
-        <input type="text" id="company" placeholder="Enter company name">
+                    <div id="requestPlaceholder" class="empty-hint">
+                        Select a request type above to enter package details.
+                    </div>
 
-        <label>Request Type:</label>
-        <div class="checkbox-group">
-            <input type="checkbox" id="pickupCheckbox" onchange="toggleFields()">
-            <label for="pickupCheckbox">Pickup</label>
-            <input type="checkbox" id="deliveryCheckbox" onchange="toggleFields()">
-            <label for="deliveryCheckbox">Delivery</label>
+                    <div id="pickupFields" class="details-panel" aria-labelledby="pickup-heading">
+                        <h3 id="pickup-heading">Pickup details</h3>
+                        <div class="field-grid two-col">
+                            <div class="field" data-field="packageCount">
+                                <label for="packageCount">Number of packages</label>
+                                <input type="number" id="packageCount" name="packageCount" min="1" placeholder="1">
+                            </div>
+                            <div class="field" data-field="packageLocation">
+                                <label for="packageLocation">Package location</label>
+                                <select id="packageLocation" name="packageLocation"></select>
+                                <span class="field-error">Select a location</span>
+                            </div>
+                            <div class="field" data-field="boothNumber">
+                                <label for="boothNumber">Booth number / letter</label>
+                                <input type="text" id="boothNumber" name="boothNumber" placeholder="e.g. A123">
+                            </div>
+                            <div class="field" data-field="packageWeight">
+                                <label for="packageWeight">Weight (approx.)</label>
+                                <input type="text" id="packageWeight" name="packageWeight" placeholder="e.g. 5 lbs">
+                            </div>
+                            <div class="field" data-field="pickupDate">
+                                <label for="pickupDate">Pickup date</label>
+                                <input type="date" id="pickupDate" name="pickupDate">
+                            </div>
+                            <div class="field" data-field="pickupTime">
+                                <label for="pickupTime">Pickup time</label>
+                                <input type="text" id="pickupTime" name="pickupTime" placeholder="e.g. 2:00 PM">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="deliveryFields" class="details-panel" aria-labelledby="delivery-heading">
+                        <h3 id="delivery-heading">Delivery details</h3>
+                        <div class="field-grid two-col">
+                            <div class="field" data-field="deliveryPackageCount">
+                                <label for="deliveryPackageCount">Number of packages</label>
+                                <input type="number" id="deliveryPackageCount" name="deliveryPackageCount" min="1" placeholder="1">
+                            </div>
+                            <div class="field" data-field="deliveryPackageLocation">
+                                <label for="deliveryPackageLocation">Storage location</label>
+                                <select id="deliveryPackageLocation" name="deliveryPackageLocation"></select>
+                                <span class="field-error">Select a storage location</span>
+                            </div>
+                            <div class="field" data-field="deliveryPackageWeight">
+                                <label for="deliveryPackageWeight">Weight (approx.)</label>
+                                <input type="text" id="deliveryPackageWeight" name="deliveryPackageWeight" placeholder="e.g. 5 lbs">
+                            </div>
+                            <div class="field" data-field="deliveryDate">
+                                <label for="deliveryDate">Delivery date</label>
+                                <input type="date" id="deliveryDate" name="deliveryDate">
+                            </div>
+                            <div class="field" data-field="deliveryTime">
+                                <label for="deliveryTime">Delivery time</label>
+                                <input type="text" id="deliveryTime" name="deliveryTime" placeholder="e.g. 10:00 AM">
+                            </div>
+                            <div class="field" data-field="deliveryLocation" style="grid-column: 1 / -1;">
+                                <label for="deliveryLocation">Final delivery location</label>
+                                <select id="deliveryLocation" name="deliveryLocation"></select>
+                                <span class="field-error">Select a delivery location</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="location-tools">
+                        <button type="button" class="btn-link" id="toggleAddLocation">+ Add a new location</button>
+                        <div id="locationAddPanel" class="location-add">
+                            <input type="text" id="newLocationInput" placeholder="Location name" aria-label="New location name">
+                            <button type="button" class="btn-ghost" id="confirmAddLocation">Add</button>
+                            <button type="button" class="btn-secondary" id="cancelAddLocation">Cancel</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="section" aria-labelledby="section-payment">
+                    <div class="section-header">
+                        <span class="section-number" aria-hidden="true">4</span>
+                        <div>
+                            <h2 class="section-title" id="section-payment">Payment</h2>
+                        </div>
+                    </div>
+                    <div class="field-grid two-col">
+                        <div class="field" data-field="paymentStatus">
+                            <label for="paymentStatus">Payment status</label>
+                            <select id="paymentStatus" name="paymentStatus">
+                                <option value="paid">Paid</option>
+                                <option value="payLater">Will pay later</option>
+                            </select>
+                        </div>
+                        <div class="field" data-field="accountNumber">
+                            <label for="accountNumber">FedEx account number</label>
+                            <input type="text" id="accountNumber" name="accountNumber" placeholder="Optional">
+                        </div>
+                    </div>
+                    <div class="toggle-row" style="margin-top: 1rem;">
+                        <input type="checkbox" id="creditCardProvided" name="creditCardProvided">
+                        <div>
+                            <label for="creditCardProvided">Credit card info provided</label>
+                            <p class="field-hint">If collected, card details are stored securely in the safe—not on this form.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="actions actions-in-card">
+                    <button type="submit" class="btn-primary">Download PDF</button>
+                    <button type="button" class="btn-secondary" id="clearFormBtn">Clear form</button>
+                </div>
+            </form>
         </div>
+    </main>
 
-        <div id="pickupFields" style="display: none;">
-            <h3>Pickup Details</h3>
-            <label for="packageCount">Number of Packages:</label>
-            <input type="number" id="packageCount" min="1" placeholder="e.g., 1">
-
-            <label for="packageLocation">Package Location:</label>
-            <select id="packageLocation"></select>
-
-            <label for="boothNumber">Booth Number/Letter:</label>
-            <input type="text" id="boothNumber" placeholder="e.g., A123">
-
-            <label for="packageWeight">Weight of Each Package (approx.):</label>
-            <input type="text" id="packageWeight" placeholder="e.g., 5 lbs, 20 kg">
-
-            <label for="pickupDate">Pickup Date:</label>
-            <input type="date" id="pickupDate">
-
-            <label for="pickupTime">Pickup Time:</label>
-            <input type="text" id="pickupTime" placeholder="e.g., 2:00 PM">
-        </div>
-
-        <div id="deliveryFields" style="display: none;">
-            <h3>Delivery Details</h3>
-            <label for="deliveryPackageCount">Number of Packages:</label>
-            <input type="number" id="deliveryPackageCount" min="1" placeholder="e.g., 1">
-
-            <label for="deliveryPackageLocation">Package Storage Location:</label>
-            <select id="deliveryPackageLocation"></select>
-
-            <label for="deliveryPackageWeight">Weight of Each Package (approx.):</label>
-            <input type="text" id="deliveryPackageWeight" placeholder="e.g., 5 lbs, 20 kg">
-
-            <label for="deliveryDate">Delivery Date:</label>
-            <input type="date" id="deliveryDate">
-
-            <label for="deliveryTime">Delivery Time:</label>
-            <input type="text" id="deliveryTime" placeholder="e.g., 10:00 AM">
-
-            <label for="deliveryLocation">Final Delivery Location:</label>
-            <select id="deliveryLocation"></select>
-        </div>
-
-        <label for="paymentStatus">Payment Status:</label>
-        <select id="paymentStatus">
-            <option value="paid">Paid</option>
-            <option value="payLater">Will Pay Later</option>
-        </select>
-
-        <label for="accountNumber">FedEx Account Number:</label>
-        <input type="text" id="accountNumber" placeholder="Optional: Enter FedEx account number">
-
-        <div class="checkbox-group" style="margin-top: 20px;">
-            <input type="checkbox" id="creditCardProvided">
-            <label for="creditCardProvided">Credit Card Info Provided</label>
-        </div>
-        <p class="info-text">If collected, the information is stored securely in the safe.</p>
-
-        <button onclick="generatePDF()">Download as PDF</button>
-        <button class="clear-button" onclick="clearForm()">Clear Form</button>
-        <button class="add-location-button" onclick="addLocation()">Add New Location</button>
+    <div class="actions-sticky" aria-label="Form actions">
+        <button type="submit" form="packageForm" class="btn-primary">Download PDF</button>
+        <button type="button" class="btn-secondary" id="clearFormBtnMobile">Clear</button>
     </div>
 
     <script>
-        // Array of predefined locations
-        const predefinedLocations = ["Grand Oaks", "Cibolo", "Nelson Wolf", "Azelia"];
+        const DEFAULT_LOCATIONS = ["Grand Oaks", "Cibolo", "Nelson Wolf", "Azelia"];
+        const LOCATIONS_STORAGE_KEY = "fxo_package_form_locations";
 
-        // Function to populate location dropdowns
+        let predefinedLocations = loadLocations();
+
+        function loadLocations() {
+            try {
+                const stored = localStorage.getItem(LOCATIONS_STORAGE_KEY);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        return parsed;
+                    }
+                }
+            } catch (_) { /* ignore */ }
+            return [...DEFAULT_LOCATIONS];
+        }
+
+        function saveLocations() {
+            try {
+                localStorage.setItem(LOCATIONS_STORAGE_KEY, JSON.stringify(predefinedLocations));
+            } catch (_) { /* ignore */ }
+        }
+
+        function getRequestType() {
+            const selected = document.querySelector('input[name="requestType"]:checked');
+            return selected ? selected.value : null;
+        }
+
         function populateLocations() {
-            let deliverySelect = document.getElementById("deliveryLocation");
-            let pickupSelect = document.getElementById("packageLocation");
-            let deliveryStorageSelect = document.getElementById("deliveryPackageLocation");
+            const selects = [
+                document.getElementById("deliveryLocation"),
+                document.getElementById("packageLocation"),
+                document.getElementById("deliveryPackageLocation"),
+            ];
 
-            // Clear existing options to prevent duplication
-            deliverySelect.innerHTML = "";
-            pickupSelect.innerHTML = "";
-            deliveryStorageSelect.innerHTML = "";
-
-            // Add a default "Select" option
-            const defaultOption = new Option("Select a location", "");
-            deliverySelect.add(defaultOption.cloneNode(true));
-            pickupSelect.add(defaultOption.cloneNode(true));
-            deliveryStorageSelect.add(defaultOption.cloneNode(true));
-
-
-            predefinedLocations.sort().forEach(location => { // Sort locations alphabetically
-                let option = new Option(location, location);
-                deliverySelect.add(option.cloneNode(true));
-                pickupSelect.add(option.cloneNode(true));
-                deliveryStorageSelect.add(option.cloneNode(true));
-            });
-        }
-
-        // Function to add a new location
-        function addLocation() {
-            let newLocation = prompt("Enter the new location name:");
-            if (newLocation) { // Check if user entered something
-                newLocation = newLocation.trim(); // Remove leading/trailing whitespace
-                // Capitalize first letter of each word
-                newLocation = newLocation.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-
-                if (newLocation && !predefinedLocations.includes(newLocation)) {
-                    predefinedLocations.push(newLocation);
-                    populateLocations(); // Repopulate dropdowns with the new location
-                    alert(`"${newLocation}" has been added to the location list.`);
-                } else if (predefinedLocations.includes(newLocation)) {
-                    alert(`"${newLocation}" already exists in the location list.`);
-                }
-            }
-        }
-
-        // Function to toggle pickup and delivery fields based on checkbox selection
-        function toggleFields() {
-            const pickupChecked = document.getElementById("pickupCheckbox").checked;
-            const deliveryChecked = document.getElementById("deliveryCheckbox").checked;
-
-            document.getElementById("pickupFields").style.display = pickupChecked ? "block" : "none";
-            document.getElementById("deliveryFields").style.display = deliveryChecked ? "block" : "none";
-
-            // Ensure only one checkbox can be selected at a time for request type
-            if (pickupChecked && deliveryChecked) {
-                if (event.target.id === "pickupCheckbox") {
-                    document.getElementById("deliveryCheckbox").checked = false;
-                    document.getElementById("deliveryFields").style.display = "none";
-                } else {
-                    document.getElementById("pickupCheckbox").checked = false;
-                    document.getElementById("pickupFields").style.display = "none";
-                }
-            }
-        }
-
-        // Function to clear the form
-        function clearForm() {
-            // Confirm with the user before clearing
-            if (!confirm("Are you sure you want to clear the form?")) {
-                return; // Stop if user cancels
-            }
-
-            document.querySelectorAll("input, select").forEach(field => {
-                if (field.type === "text" || field.type === "number" || field.type === "date" || field.tagName === "SELECT") {
-                    field.value = "";
-                } else if (field.type === "checkbox") {
-                    field.checked = false;
+            selects.forEach((select) => {
+                const current = select.value;
+                select.innerHTML = "";
+                select.add(new Option("Select a location", ""));
+                predefinedLocations.slice().sort().forEach((location) => {
+                    select.add(new Option(location, location));
+                });
+                if ([...select.options].some((o) => o.value === current)) {
+                    select.value = current;
                 }
             });
+        }
 
-            // Reset dropdowns to the default "Select a location"
+        function titleCaseLocation(name) {
+            return name.trim().split(/\s+/).map((word) =>
+                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+            ).join(" ");
+        }
+
+        function showStatus(message, type, listItems) {
+            const banner = document.getElementById("statusBanner");
+            banner.className = "status-banner visible " + type;
+            if (listItems && listItems.length > 0) {
+                banner.innerHTML = "<strong>" + message + "</strong><ul>" +
+                    listItems.map((i) => "<li>" + i + "</li>").join("") + "</ul>";
+            } else {
+                banner.textContent = message;
+            }
+            banner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+
+        function hideStatus() {
+            const banner = document.getElementById("statusBanner");
+            banner.className = "status-banner";
+            banner.textContent = "";
+        }
+
+        function setFieldInvalid(fieldKey, invalid) {
+            const wrapper = document.querySelector('.field[data-field="' + fieldKey + '"]');
+            if (wrapper) {
+                wrapper.classList.toggle("invalid", invalid);
+            }
+        }
+
+        function clearValidation() {
+            document.querySelectorAll(".field.invalid").forEach((el) => el.classList.remove("invalid"));
+            document.getElementById("requestTypeGroup").classList.remove("invalid");
+            document.getElementById("requestTypeError").style.display = "none";
+            hideStatus();
+        }
+
+        function updateRequestPanels() {
+            const type = getRequestType();
+            const pickupPanel = document.getElementById("pickupFields");
+            const deliveryPanel = document.getElementById("deliveryFields");
+            const placeholder = document.getElementById("requestPlaceholder");
+
+            pickupPanel.classList.toggle("visible", type === "pickup");
+            deliveryPanel.classList.toggle("visible", type === "delivery");
+            placeholder.style.display = type ? "none" : "block";
+        }
+
+        function validateForm() {
+            clearValidation();
+            const messages = [];
+
+            const employeeName = document.getElementById("employeeName").value.trim();
+            const badgeNumber = document.getElementById("badgeNumber").value.trim();
+
+            if (!employeeName) {
+                setFieldInvalid("employeeName", true);
+                messages.push("Employee name is required");
+            }
+            if (!badgeNumber) {
+                setFieldInvalid("badgeNumber", true);
+                messages.push("Badge number is required");
+            }
+
+            const requestType = getRequestType();
+            if (!requestType) {
+                document.getElementById("requestTypeGroup").classList.add("invalid");
+                document.getElementById("requestTypeError").style.display = "block";
+                messages.push("Select pickup or delivery");
+            } else if (requestType === "pickup") {
+                if (!document.getElementById("packageLocation").value) {
+                    setFieldInvalid("packageLocation", true);
+                    messages.push("Select a package location for pickup");
+                }
+            } else if (requestType === "delivery") {
+                if (!document.getElementById("deliveryPackageLocation").value) {
+                    setFieldInvalid("deliveryPackageLocation", true);
+                    messages.push("Select a storage location for delivery");
+                }
+                if (!document.getElementById("deliveryLocation").value) {
+                    setFieldInvalid("deliveryLocation", true);
+                    messages.push("Select a final delivery location");
+                }
+            }
+
+            if (messages.length > 0) {
+                showStatus("Please fix the following before downloading:", "error", messages);
+                const firstInvalid = document.querySelector(".field.invalid input, .field.invalid select");
+                if (firstInvalid) {
+                    firstInvalid.focus();
+                } else if (!requestType) {
+                    document.getElementById("requestPickup").focus();
+                }
+                return false;
+            }
+            return true;
+        }
+
+        function addLocationFromInput() {
+            const input = document.getElementById("newLocationInput");
+            const newLocation = titleCaseLocation(input.value);
+
+            if (!newLocation) {
+                input.focus();
+                return;
+            }
+
+            if (predefinedLocations.includes(newLocation)) {
+                showStatus('"' + newLocation + '" is already in the list.', "error");
+                return;
+            }
+
+            predefinedLocations.push(newLocation);
+            saveLocations();
             populateLocations();
-
-            // Hide dynamic fields
-            document.getElementById("pickupFields").style.display = "none";
-            document.getElementById("deliveryFields").style.display = "none";
+            input.value = "";
+            document.getElementById("locationAddPanel").classList.remove("visible");
+            showStatus('"' + newLocation + '" added to locations.', "success");
+            setTimeout(hideStatus, 3000);
         }
 
-        // Function to generate the PDF
+        function clearForm() {
+            if (!confirm("Clear all fields? This cannot be undone.")) {
+                return;
+            }
+
+            document.getElementById("packageForm").reset();
+            clearValidation();
+            updateRequestPanels();
+            populateLocations();
+        }
+
         function generatePDF() {
+            if (!validateForm()) {
+                return;
+            }
+
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            // Collect form data
-            const employeeName = document.getElementById("employeeName").value;
-            const badgeNumber = document.getElementById("badgeNumber").value;
-            const guestName = document.getElementById("guestName").value;
-            const phoneNumber = document.getElementById("phoneNumber").value;
-            const company = document.getElementById("company").value;
+            const employeeName = document.getElementById("employeeName").value.trim();
+            const badgeNumber = document.getElementById("badgeNumber").value.trim();
+            const guestName = document.getElementById("guestName").value.trim();
+            const phoneNumber = document.getElementById("phoneNumber").value.trim();
+            const company = document.getElementById("company").value.trim();
             const paymentStatus = document.getElementById("paymentStatus").value;
-            const accountNumber = document.getElementById("accountNumber").value;
+            const accountNumber = document.getElementById("accountNumber").value.trim();
             const creditCardProvided = document.getElementById("creditCardProvided").checked ? "Yes" : "No";
+            const requestType = getRequestType() === "pickup" ? "Pickup" : "Delivery";
 
-            let requestType = "";
-            if (document.getElementById("pickupCheckbox").checked) {
-                requestType = "Pickup";
-            } else if (document.getElementById("deliveryCheckbox").checked) {
-                requestType = "Delivery";
+            let formData = "\nFedEx Office - Package Request Form\n\nGeneral Information:\n------------------------------------------\n" +
+                "Employee Name: " + employeeName + "\n" +
+                "Badge Number: " + badgeNumber + "\n" +
+                "Guest Name: " + (guestName || "N/A") + "\n" +
+                "Phone Number: " + (phoneNumber || "N/A") + "\n" +
+                "Company: " + (company || "N/A") + "\n" +
+                "Request Type: " + requestType + "\n" +
+                "Payment Status: " + (paymentStatus === "paid" ? "Paid" : "Will Pay Later") + "\n" +
+                "FedEx Account Number: " + (accountNumber || "N/A") + "\n" +
+                "Credit Card Info Provided: " + creditCardProvided + "\n" +
+                "(If collected, the information is stored securely in the safe.)\n";
+
+            if (getRequestType() === "pickup") {
+                formData += "\n------------------------------------------\nPickup Details:\n------------------------------------------\n" +
+                    "Number of Packages: " + (document.getElementById("packageCount").value || "N/A") + "\n" +
+                    "Package Location: " + (document.getElementById("packageLocation").value || "N/A") + "\n" +
+                    "Booth Number/Letter: " + (document.getElementById("boothNumber").value || "N/A") + "\n" +
+                    "Weight of Each Package: " + (document.getElementById("packageWeight").value || "N/A") + "\n" +
+                    "Pickup Date: " + (document.getElementById("pickupDate").value || "N/A") + "\n" +
+                    "Pickup Time: " + (document.getElementById("pickupTime").value || "N/A") + "\n";
             } else {
-                alert("Please select a Request Type (Pickup or Delivery).");
-                return; // Stop PDF generation if no request type is selected
+                formData += "\n------------------------------------------\nDelivery Details:\n------------------------------------------\n" +
+                    "Number of Packages: " + (document.getElementById("deliveryPackageCount").value || "N/A") + "\n" +
+                    "Package Storage Location: " + (document.getElementById("deliveryPackageLocation").value || "N/A") + "\n" +
+                    "Weight of Each Package: " + (document.getElementById("deliveryPackageWeight").value || "N/A") + "\n" +
+                    "Delivery Date: " + (document.getElementById("deliveryDate").value || "N/A") + "\n" +
+                    "Delivery Time: " + (document.getElementById("deliveryTime").value || "N/A") + "\n" +
+                    "Final Delivery Location: " + (document.getElementById("deliveryLocation").value || "N/A") + "\n";
             }
 
-            let formData = `
-FedEx Office - Package Request Form
-
-General Information:
-------------------------------------------
-Employee Name: ${employeeName || 'N/A'}
-Badge Number: ${badgeNumber || 'N/A'}
-Guest Name: ${guestName || 'N/A'}
-Phone Number: ${phoneNumber || 'N/A'}
-Company: ${company || 'N/A'}
-Request Type: ${requestType}
-Payment Status: ${paymentStatus === 'paid' ? 'Paid' : 'Will Pay Later'}
-FedEx Account Number: ${accountNumber || 'N/A'}
-Credit Card Info Provided: ${creditCardProvided}
-(If collected, the information is stored securely in the safe.)
-`;
-
-            if (document.getElementById("pickupCheckbox").checked) {
-                const packageCount = document.getElementById("packageCount").value;
-                const packageLocation = document.getElementById("packageLocation").value;
-                const boothNumber = document.getElementById("boothNumber").value;
-                const packageWeight = document.getElementById("packageWeight").value;
-                const pickupDate = document.getElementById("pickupDate").value;
-                const pickupTime = document.getElementById("pickupTime").value;
-
-                formData += `
-------------------------------------------
-Pickup Details:
-------------------------------------------
-Number of Packages: ${packageCount || 'N/A'}
-Package Location: ${packageLocation || 'N/A'}
-Booth Number/Letter: ${boothNumber || 'N/A'}
-Weight of Each Package: ${packageWeight || 'N/A'}
-Pickup Date: ${pickupDate || 'N/A'}
-Pickup Time: ${pickupTime || 'N/A'}
-`;
-            }
-
-            if (document.getElementById("deliveryCheckbox").checked) {
-                const deliveryPackageCount = document.getElementById("deliveryPackageCount").value;
-                const deliveryPackageLocation = document.getElementById("deliveryPackageLocation").value;
-                const deliveryPackageWeight = document.getElementById("deliveryPackageWeight").value;
-                const deliveryDate = document.getElementById("deliveryDate").value;
-                const deliveryTime = document.getElementById("deliveryTime").value;
-                const deliveryLocation = document.getElementById("deliveryLocation").value;
-
-                formData += `
-------------------------------------------
-Delivery Details:
-------------------------------------------
-Number of Packages: ${deliveryPackageCount || 'N/A'}
-Package Storage Location: ${deliveryPackageLocation || 'N/A'}
-Weight of Each Package: ${deliveryPackageWeight || 'N/A'}
-Delivery Date: ${deliveryDate || 'N/A'}
-Delivery Time: ${deliveryTime || 'N/A'}
-Final Delivery Location: ${deliveryLocation || 'N/A'}
-`;
-            }
-
-            // Split text into lines to fit PDF page
-            const lines = doc.splitTextToSize(formData, 180); // 180 is approximate width for A4 page
-
+            const lines = doc.splitTextToSize(formData, 180);
             doc.setFontSize(11);
             doc.text(lines, 10, 10);
             doc.save("FedEx_Package_Request_Form.pdf");
+
+            showStatus("PDF downloaded successfully.", "success");
+            setTimeout(hideStatus, 4000);
         }
 
-        // Initialize locations when the page loads
+        document.querySelectorAll('input[name="requestType"]').forEach((radio) => {
+            radio.addEventListener("change", () => {
+                clearValidation();
+                updateRequestPanels();
+            });
+        });
+
+        document.getElementById("packageForm").addEventListener("submit", (e) => {
+            e.preventDefault();
+            generatePDF();
+        });
+
+        document.getElementById("clearFormBtn").addEventListener("click", clearForm);
+        document.getElementById("clearFormBtnMobile").addEventListener("click", clearForm);
+
+        document.getElementById("toggleAddLocation").addEventListener("click", () => {
+            const panel = document.getElementById("locationAddPanel");
+            panel.classList.toggle("visible");
+            if (panel.classList.contains("visible")) {
+                document.getElementById("newLocationInput").focus();
+            }
+        });
+
+        document.getElementById("confirmAddLocation").addEventListener("click", addLocationFromInput);
+        document.getElementById("cancelAddLocation").addEventListener("click", () => {
+            document.getElementById("newLocationInput").value = "";
+            document.getElementById("locationAddPanel").classList.remove("visible");
+        });
+
+        document.getElementById("newLocationInput").addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                addLocationFromInput();
+            }
+        });
+
+        document.querySelectorAll(".field input, .field select").forEach((el) => {
+            el.addEventListener("input", () => {
+                const wrapper = el.closest(".field");
+                if (wrapper) {
+                    wrapper.classList.remove("invalid");
+                }
+            });
+        });
+
         populateLocations();
+        updateRequestPanels();
     </script>
 </body>
 </html>
