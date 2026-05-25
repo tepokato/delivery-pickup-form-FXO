@@ -15,7 +15,7 @@ At least one request type (Pickup or Delivery)
 🚀 Getting Started
 To use the form:
 
-Open the delivery:pickup form-beta02.html file in any modern web browser.
+Open `index.html` in any modern web browser (or serve the folder with a simple static server).
 Fill in all relevant details based on the package request.
 Select the appropriate request type.
 Click “Download as PDF” to generate the form summary.
