@@ -331,6 +331,36 @@
             font-size: 0.8rem;
         }
 
+        .package-detail-card {
+            padding: 0.85rem;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+
+        .package-detail-card.invalid {
+            border-color: var(--error);
+            background: var(--error-bg);
+        }
+
+        .package-detail-card h4 {
+            margin: 0 0 0.65rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--fedex-purple);
+        }
+
+        .package-detail-fields {
+            display: grid;
+            gap: 0.65rem;
+        }
+
+        @media (min-width: 520px) {
+            .package-detail-fields {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
         .toggle-row {
             display: flex;
             align-items: flex-start;
@@ -479,6 +509,33 @@
         .btn-ghost:hover {
             background: rgba(77, 20, 140, 0.06);
         }
+
+        .time-select {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .time-select select {
+            width: 100%;
+            padding: 0.65rem 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            color: var(--text);
+            background: #fff;
+        }
+
+        .time-select select:focus {
+            outline: none;
+            border-color: var(--fedex-orange);
+            box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.2);
+        }
+
+        .field.invalid .time-select select {
+            border-color: var(--error);
+            background: var(--error-bg);
+        }
     </style>
 </head>
 <body>
@@ -595,8 +652,20 @@
                                 <input type="date" id="pickupDate" name="pickupDate">
                             </div>
                             <div class="field" data-field="pickupTime">
-                                <label for="pickupTime">Pickup time</label>
-                                <input type="text" id="pickupTime" name="pickupTime" placeholder="e.g. 2:00 PM">
+                                <span class="field-label" id="pickupTimeLabel">Pickup time</span>
+                                <div class="time-select" role="group" aria-labelledby="pickupTimeLabel">
+                                    <select id="pickupTimeHour" name="pickupTimeHour" aria-label="Pickup hour">
+                                        <option value="">Hour</option>
+                                    </select>
+                                    <select id="pickupTimeMinute" name="pickupTimeMinute" aria-label="Pickup minute">
+                                        <option value="">Min</option>
+                                    </select>
+                                    <select id="pickupTimePeriod" name="pickupTimePeriod" aria-label="Pickup AM or PM">
+                                        <option value="">AM/PM</option>
+                                        <option value="AM">AM</option>
+                                        <option value="PM">PM</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -608,24 +677,35 @@
                                 <label for="deliveryPackageCount">Number of packages</label>
                                 <input type="number" id="deliveryPackageCount" name="deliveryPackageCount" min="1" placeholder="1">
                             </div>
-                            <div class="field" data-field="deliveryPackageLocation">
-                                <label for="deliveryPackageLocation">Storage location</label>
-                                <select id="deliveryPackageLocation" name="deliveryPackageLocation"></select>
-                                <span class="field-error">Select a storage location</span>
+                            <div class="field" data-field="deliveryBoothNumber">
+                                <label for="deliveryBoothNumber">Booth number / letter</label>
+                                <input type="text" id="deliveryBoothNumber" name="deliveryBoothNumber" placeholder="e.g. A123">
                             </div>
                             <div class="field package-weights-field" data-field="deliveryPackageWeights" style="grid-column: 1 / -1;">
-                                <span class="field-label">Weight per package</span>
-                                <p class="field-hint">Set the number of packages above — one weight field appears for each package.</p>
+                                <span class="field-label">Packages — weight &amp; stage location</span>
+                                <p class="field-hint">Set the number of packages above. For each package, enter the weight and warehouse stage (e.g. D4) so your partner can find it.</p>
                                 <div id="deliveryPackageWeights" class="package-weights-list" aria-live="polite"></div>
-                                <span class="field-error">Enter a weight for every package</span>
+                                <span class="field-error">Enter weight and stage location for every package</span>
                             </div>
                             <div class="field" data-field="deliveryDate">
                                 <label for="deliveryDate">Delivery date</label>
                                 <input type="date" id="deliveryDate" name="deliveryDate">
                             </div>
                             <div class="field" data-field="deliveryTime">
-                                <label for="deliveryTime">Delivery time</label>
-                                <input type="text" id="deliveryTime" name="deliveryTime" placeholder="e.g. 10:00 AM">
+                                <span class="field-label" id="deliveryTimeLabel">Delivery time</span>
+                                <div class="time-select" role="group" aria-labelledby="deliveryTimeLabel">
+                                    <select id="deliveryTimeHour" name="deliveryTimeHour" aria-label="Delivery hour">
+                                        <option value="">Hour</option>
+                                    </select>
+                                    <select id="deliveryTimeMinute" name="deliveryTimeMinute" aria-label="Delivery minute">
+                                        <option value="">Min</option>
+                                    </select>
+                                    <select id="deliveryTimePeriod" name="deliveryTimePeriod" aria-label="Delivery AM or PM">
+                                        <option value="">AM/PM</option>
+                                        <option value="AM">AM</option>
+                                        <option value="PM">PM</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="field" data-field="deliveryLocation" style="grid-column: 1 / -1;">
                                 <label for="deliveryLocation">Final delivery location</label>
@@ -721,7 +801,6 @@
             const selects = [
                 document.getElementById("deliveryLocation"),
                 document.getElementById("packageLocation"),
-                document.getElementById("deliveryPackageLocation"),
             ];
 
             selects.forEach((select) => {
@@ -798,43 +877,102 @@
 
         function renderPackageWeightInputs(containerId, count) {
             const container = document.getElementById(containerId);
-            const saved = {};
+            const includeStage = containerId === "deliveryPackageWeights";
+            const savedWeights = {};
+            const savedStages = {};
             container.querySelectorAll("input[data-package-weight]").forEach((input) => {
-                saved[input.dataset.packageIndex] = input.value;
+                savedWeights[input.dataset.packageIndex] = input.value;
+            });
+            container.querySelectorAll("input[data-package-stage]").forEach((input) => {
+                savedStages[input.dataset.packageIndex] = input.value;
             });
             container.innerHTML = "";
 
             if (count < 1) {
                 const hint = document.createElement("p");
                 hint.className = "weights-empty";
-                hint.textContent = "Enter the number of packages to add weight fields.";
+                hint.textContent = includeStage
+                    ? "Enter the number of packages to add weight and stage fields."
+                    : "Enter the number of packages to add weight fields.";
                 container.appendChild(hint);
                 return;
             }
 
             for (let i = 1; i <= count; i++) {
                 const row = document.createElement("div");
-                row.className = "field package-weight-row";
-                row.dataset.field = containerId + "Weight" + i;
+                row.className = includeStage ? "package-detail-card" : "field package-weight-row";
+                row.dataset.field = containerId + "Package" + i;
 
-                const label = document.createElement("label");
-                const inputId = containerId + "Weight" + i;
-                label.setAttribute("for", inputId);
-                label.textContent = "Package " + i + " weight";
+                if (includeStage) {
+                    const heading = document.createElement("h4");
+                    heading.textContent = "Package " + i;
+                    row.appendChild(heading);
 
-                const input = document.createElement("input");
-                input.type = "text";
-                input.id = inputId;
-                input.name = inputId;
-                input.placeholder = "e.g. 5 lbs";
-                input.setAttribute("data-package-weight", "true");
-                input.dataset.packageIndex = String(i);
-                if (saved[String(i)] !== undefined) {
-                    input.value = saved[String(i)];
+                    const fields = document.createElement("div");
+                    fields.className = "package-detail-fields";
+
+                    const weightField = document.createElement("div");
+                    weightField.className = "field package-weight-row";
+                    const weightLabel = document.createElement("label");
+                    const weightId = containerId + "Weight" + i;
+                    weightLabel.setAttribute("for", weightId);
+                    weightLabel.textContent = "Weight";
+                    const weightInput = document.createElement("input");
+                    weightInput.type = "text";
+                    weightInput.id = weightId;
+                    weightInput.name = weightId;
+                    weightInput.placeholder = "e.g. 5";
+                    weightInput.setAttribute("data-package-weight", "true");
+                    weightInput.dataset.packageIndex = String(i);
+                    if (savedWeights[String(i)] !== undefined) {
+                        weightInput.value = savedWeights[String(i)];
+                    }
+                    weightField.appendChild(weightLabel);
+                    weightField.appendChild(weightInput);
+
+                    const stageField = document.createElement("div");
+                    stageField.className = "field package-stage-row";
+                    const stageLabel = document.createElement("label");
+                    const stageId = containerId + "Stage" + i;
+                    stageLabel.setAttribute("for", stageId);
+                    stageLabel.textContent = "Stage location";
+                    const stageInput = document.createElement("input");
+                    stageInput.type = "text";
+                    stageInput.id = stageId;
+                    stageInput.name = stageId;
+                    stageInput.placeholder = "e.g. D4";
+                    stageInput.setAttribute("data-package-stage", "true");
+                    stageInput.dataset.packageIndex = String(i);
+                    if (savedStages[String(i)] !== undefined) {
+                        stageInput.value = savedStages[String(i)];
+                    }
+                    stageField.appendChild(stageLabel);
+                    stageField.appendChild(stageInput);
+
+                    fields.appendChild(weightField);
+                    fields.appendChild(stageField);
+                    row.appendChild(fields);
+                } else {
+                    const label = document.createElement("label");
+                    const inputId = containerId + "Weight" + i;
+                    label.setAttribute("for", inputId);
+                    label.textContent = "Package " + i + " weight";
+
+                    const input = document.createElement("input");
+                    input.type = "text";
+                    input.id = inputId;
+                    input.name = inputId;
+                    input.placeholder = "e.g. 5";
+                    input.setAttribute("data-package-weight", "true");
+                    input.dataset.packageIndex = String(i);
+                    if (savedWeights[String(i)] !== undefined) {
+                        input.value = savedWeights[String(i)];
+                    }
+
+                    row.appendChild(label);
+                    row.appendChild(input);
                 }
 
-                row.appendChild(label);
-                row.appendChild(input);
                 container.appendChild(row);
             }
         }
@@ -854,17 +992,223 @@
             return [...container.querySelectorAll("input[data-package-weight]")].map((input) => input.value.trim());
         }
 
+        function collectPackageStages(containerId) {
+            const container = document.getElementById(containerId);
+            return [...container.querySelectorAll("input[data-package-stage]")].map((input) => input.value.trim());
+        }
+
+        function formatWeightForPdf(weight) {
+            const trimmed = weight.trim();
+            if (!trimmed) {
+                return "N/A";
+            }
+            if (/lb/i.test(trimmed)) {
+                return trimmed;
+            }
+            if (/^\d+(\.\d+)?$/.test(trimmed)) {
+                return trimmed + " lbs";
+            }
+            return trimmed;
+        }
+
         function formatPackageWeightsForPdf(containerId) {
             const weights = collectPackageWeights(containerId);
             if (weights.length === 0) {
                 return "N/A";
             }
-            return weights.map((weight, index) => "Package " + (index + 1) + ": " + (weight || "N/A")).join("\n");
+            if (containerId === "deliveryPackageWeights") {
+                const stages = collectPackageStages(containerId);
+                return weights.map((weight, index) => {
+                    const weightText = formatWeightForPdf(weight);
+                    const stage = stages[index];
+                    const stageText = stage ? stage : "N/A";
+                    return "Package " + (index + 1) + ": " + weightText + ", staged in " + stageText;
+                }).join("\n");
+            }
+            return weights
+                .map((weight, index) => "Package " + (index + 1) + ": " + formatWeightForPdf(weight))
+                .join("\n");
+        }
+
+        function populateTimeSelectOptions() {
+            ["pickupTimeHour", "deliveryTimeHour"].forEach((id) => {
+                const select = document.getElementById(id);
+                const current = select.value;
+                select.innerHTML = '<option value="">Hour</option>';
+                for (let h = 1; h <= 12; h++) {
+                    select.add(new Option(String(h), String(h)));
+                }
+                if (current) {
+                    select.value = current;
+                }
+            });
+
+            ["pickupTimeMinute", "deliveryTimeMinute"].forEach((id) => {
+                const select = document.getElementById(id);
+                const current = select.value;
+                select.innerHTML = '<option value="">Min</option>';
+                ["00", "30"].forEach((minute) => {
+                    select.add(new Option(minute, minute));
+                });
+                if (current) {
+                    select.value = current;
+                }
+            });
+        }
+
+        function getFormattedTime(prefix) {
+            const hour = document.getElementById(prefix + "Hour").value;
+            const minute = document.getElementById(prefix + "Minute").value;
+            const period = document.getElementById(prefix + "Period").value;
+            if (!hour || !minute || !period) {
+                return "N/A";
+            }
+            return hour + ":" + minute + " " + period;
+        }
+
+        const PDF_PURPLE = [77, 20, 140];
+        const PDF_ORANGE = [255, 102, 0];
+        const PDF_MARGIN = 14;
+        const PDF_CONTENT_WIDTH = 182;
+        const PDF_LABEL_WIDTH = 62;
+
+        function pdfEnsureSpace(doc, y, needed) {
+            const pageHeight = doc.internal.pageSize.getHeight();
+            if (y + needed > pageHeight - PDF_MARGIN) {
+                doc.addPage();
+                return PDF_MARGIN;
+            }
+            return y;
+        }
+
+        function pdfDrawHeader(doc, title, subtitle, filledByLine) {
+            const pageWidth = doc.internal.pageSize.getWidth();
+            doc.setFillColor(...PDF_PURPLE);
+            doc.rect(0, 0, pageWidth, 36, "F");
+            doc.setFillColor(...PDF_ORANGE);
+            doc.rect(0, 36, pageWidth, 3, "F");
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(18);
+            doc.setFont(undefined, "bold");
+            doc.text("FedEx Office", PDF_MARGIN, 16);
+
+            if (filledByLine) {
+                doc.setFontSize(9);
+                doc.setFont(undefined, "normal");
+                doc.text(filledByLine, pageWidth - PDF_MARGIN, 14, { align: "right" });
+            }
+
+            doc.setFontSize(13);
+            doc.setFont(undefined, "bold");
+            doc.text(title, PDF_MARGIN, 26);
+
+            if (subtitle) {
+                doc.setFontSize(9);
+                doc.setFont(undefined, "normal");
+                doc.text(subtitle, PDF_MARGIN, 32);
+            }
+
+            return 46;
+        }
+
+        function pdfDrawSection(doc, y, title) {
+            y = pdfEnsureSpace(doc, y, 14);
+            doc.setFillColor(245, 242, 249);
+            doc.rect(PDF_MARGIN, y, PDF_CONTENT_WIDTH, 9, "F");
+            doc.setDrawColor(...PDF_PURPLE);
+            doc.setLineWidth(0.4);
+            doc.line(PDF_MARGIN, y, PDF_MARGIN, y + 9);
+
+            doc.setTextColor(...PDF_PURPLE);
+            doc.setFontSize(11);
+            doc.setFont(undefined, "bold");
+            doc.text(title, PDF_MARGIN + 4, y + 6.2);
+            doc.setTextColor(0, 0, 0);
+            return y + 13;
+        }
+
+        function pdfDrawField(doc, y, label, value) {
+            const displayValue = value === undefined || value === null || String(value).trim() === ""
+                ? "N/A"
+                : String(value).trim();
+            const valueLines = doc.splitTextToSize(displayValue, PDF_CONTENT_WIDTH - PDF_LABEL_WIDTH - 4);
+            const rowHeight = Math.max(7, valueLines.length * 4.8 + 2);
+
+            y = pdfEnsureSpace(doc, y, rowHeight + 2);
+
+            doc.setFontSize(8.5);
+            doc.setFont(undefined, "bold");
+            doc.setTextColor(90, 90, 90);
+            doc.text(label, PDF_MARGIN + 2, y + 4);
+
+            doc.setFontSize(10);
+            doc.setFont(undefined, "normal");
+            doc.setTextColor(20, 20, 20);
+            doc.text(valueLines, PDF_MARGIN + PDF_LABEL_WIDTH, y + 4);
+
+            return y + rowHeight + 1.5;
+        }
+
+        function pdfDrawMultilineField(doc, y, label, value) {
+            y = pdfEnsureSpace(doc, y, 12);
+            doc.setFontSize(8.5);
+            doc.setFont(undefined, "bold");
+            doc.setTextColor(90, 90, 90);
+            doc.text(label, PDF_MARGIN + 2, y + 4);
+            y += 6;
+
+            const lines = doc.splitTextToSize(value || "N/A", PDF_CONTENT_WIDTH - 6);
+            lines.forEach((line) => {
+                y = pdfEnsureSpace(doc, y, 6);
+                doc.setFontSize(10);
+                doc.setFont(undefined, "normal");
+                doc.setTextColor(20, 20, 20);
+                doc.text(line, PDF_MARGIN + 4, y + 4);
+                y += 5;
+            });
+            return y + 2;
+        }
+
+        function pdfDrawFooter(doc) {
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const pageWidth = doc.internal.pageSize.getWidth();
+                doc.setFontSize(8);
+                doc.setFont(undefined, "normal");
+                doc.setTextColor(120, 120, 120);
+                doc.text(
+                    "Generated " + new Date().toLocaleString() + "  |  Page " + i + " of " + pageCount,
+                    pageWidth / 2,
+                    pageHeight - 8,
+                    { align: "center" }
+                );
+            }
+        }
+
+        function formatDateForPdf(isoDate) {
+            if (!isoDate) {
+                return "N/A";
+            }
+            const [year, month, day] = isoDate.split("-").map(Number);
+            if (!year || !month || !day) {
+                return isoDate;
+            }
+            const date = new Date(year, month - 1, day);
+            return date.toLocaleDateString(undefined, {
+                weekday: "short",
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+            });
         }
 
         function validatePackageWeights(containerId, fieldKey, label, messages) {
             const countInputId = containerId === "pickupPackageWeights" ? "packageCount" : "deliveryPackageCount";
             const count = parsePackageCount(document.getElementById(countInputId).value);
+            const requireStage = containerId === "deliveryPackageWeights";
 
             if (count < 1) {
                 return;
@@ -877,20 +1221,38 @@
             }
 
             const container = document.getElementById(containerId);
-            const inputs = [...container.querySelectorAll("input[data-package-weight]")];
+            const weightInputs = [...container.querySelectorAll("input[data-package-weight]")];
+            const stageInputs = requireStage
+                ? [...container.querySelectorAll("input[data-package-stage]")]
+                : [];
             let hasMissing = false;
 
-            inputs.forEach((input) => {
-                if (!input.value.trim()) {
-                    hasMissing = true;
+            function markPackageInvalid(input) {
+                hasMissing = true;
+                const card = input.closest(".package-detail-card");
+                if (card) {
+                    card.classList.add("invalid");
+                } else {
                     input.closest(".package-weight-row")?.classList.add("invalid");
+                }
+            }
+
+            weightInputs.forEach((input) => {
+                if (!input.value.trim()) {
+                    markPackageInvalid(input);
                 }
             });
 
-            if (hasMissing || inputs.length !== count) {
+            stageInputs.forEach((input) => {
+                if (!input.value.trim()) {
+                    markPackageInvalid(input);
+                }
+            });
+
+            if (hasMissing || weightInputs.length !== count || (requireStage && stageInputs.length !== count)) {
                 setFieldInvalid(fieldKey, true);
                 messages.push(label);
-                const firstEmpty = inputs.find((input) => !input.value.trim());
+                const firstEmpty = [...weightInputs, ...stageInputs].find((input) => !input.value.trim());
                 if (firstEmpty) {
                     firstEmpty.focus();
                 }
@@ -930,10 +1292,6 @@
                     messages
                 );
             } else if (requestType === "delivery") {
-                if (!document.getElementById("deliveryPackageLocation").value) {
-                    setFieldInvalid("deliveryPackageLocation", true);
-                    messages.push("Select a storage location for delivery");
-                }
                 if (!document.getElementById("deliveryLocation").value) {
                     setFieldInvalid("deliveryLocation", true);
                     messages.push("Select a final delivery location");
@@ -941,7 +1299,7 @@
                 validatePackageWeights(
                     "deliveryPackageWeights",
                     "deliveryPackageWeights",
-                    "Enter a weight for each delivery package",
+                    "Enter weight and stage location for each delivery package",
                     messages
                 );
             }
@@ -1002,6 +1360,9 @@
 
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
+            const isPickup = getRequestType() === "pickup";
+            const formTitle = isPickup ? "Pickup Form" : "Delivery Form";
+            const fileName = isPickup ? "FedEx_Pickup_Form.pdf" : "FedEx_Delivery_Form.pdf";
 
             const employeeName = document.getElementById("employeeName").value.trim();
             const badgeNumber = document.getElementById("badgeNumber").value.trim();
@@ -1011,42 +1372,51 @@
             const paymentStatus = document.getElementById("paymentStatus").value;
             const accountNumber = document.getElementById("accountNumber").value.trim();
             const creditCardProvided = document.getElementById("creditCardProvided").checked ? "Yes" : "No";
-            const requestType = getRequestType() === "pickup" ? "Pickup" : "Delivery";
 
-            let formData = "\nFedEx Office - Package Request Form\n\nGeneral Information:\n------------------------------------------\n" +
-                "Employee Name: " + employeeName + "\n" +
-                "Badge Number: " + badgeNumber + "\n" +
-                "Guest Name: " + (guestName || "N/A") + "\n" +
-                "Phone Number: " + (phoneNumber || "N/A") + "\n" +
-                "Company: " + (company || "N/A") + "\n" +
-                "Request Type: " + requestType + "\n" +
-                "Payment Status: " + (paymentStatus === "paid" ? "Paid" : "Will Pay Later") + "\n" +
-                "FedEx Account Number: " + (accountNumber || "N/A") + "\n" +
-                "Credit Card Info Provided: " + creditCardProvided + "\n" +
-                "(If collected, the information is stored securely in the safe.)\n";
+            const filledByLine = "Filled by " + employeeName + "-" + badgeNumber;
+            let y = pdfDrawHeader(
+                doc,
+                formTitle,
+                "Package " + (isPickup ? "pickup" : "delivery") + " request",
+                filledByLine
+            );
 
-            if (getRequestType() === "pickup") {
-                formData += "\n------------------------------------------\nPickup Details:\n------------------------------------------\n" +
-                    "Number of Packages: " + (document.getElementById("packageCount").value || "N/A") + "\n" +
-                    "Package Location: " + (document.getElementById("packageLocation").value || "N/A") + "\n" +
-                    "Booth Number/Letter: " + (document.getElementById("boothNumber").value || "N/A") + "\n" +
-                    "Package Weights:\n" + formatPackageWeightsForPdf("pickupPackageWeights") + "\n" +
-                    "Pickup Date: " + (document.getElementById("pickupDate").value || "N/A") + "\n" +
-                    "Pickup Time: " + (document.getElementById("pickupTime").value || "N/A") + "\n";
+            y = pdfDrawSection(doc, y, "Guest");
+            y = pdfDrawField(doc, y, "Guest name", guestName);
+            y = pdfDrawField(doc, y, "Phone number", phoneNumber);
+            y = pdfDrawField(doc, y, "Company", company);
+
+            y = pdfDrawSection(doc, y, isPickup ? "Pickup details" : "Delivery details");
+
+            if (isPickup) {
+                y = pdfDrawField(doc, y, "Number of packages", document.getElementById("packageCount").value);
+                y = pdfDrawField(doc, y, "Package location", document.getElementById("packageLocation").value);
+                y = pdfDrawField(doc, y, "Booth number / letter", document.getElementById("boothNumber").value);
+                y = pdfDrawMultilineField(doc, y, "Package weights", formatPackageWeightsForPdf("pickupPackageWeights"));
+                y = pdfDrawField(doc, y, "Pickup date", formatDateForPdf(document.getElementById("pickupDate").value));
+                y = pdfDrawField(doc, y, "Pickup time", getFormattedTime("pickupTime"));
             } else {
-                formData += "\n------------------------------------------\nDelivery Details:\n------------------------------------------\n" +
-                    "Number of Packages: " + (document.getElementById("deliveryPackageCount").value || "N/A") + "\n" +
-                    "Package Storage Location: " + (document.getElementById("deliveryPackageLocation").value || "N/A") + "\n" +
-                    "Package Weights:\n" + formatPackageWeightsForPdf("deliveryPackageWeights") + "\n" +
-                    "Delivery Date: " + (document.getElementById("deliveryDate").value || "N/A") + "\n" +
-                    "Delivery Time: " + (document.getElementById("deliveryTime").value || "N/A") + "\n" +
-                    "Final Delivery Location: " + (document.getElementById("deliveryLocation").value || "N/A") + "\n";
+                y = pdfDrawField(doc, y, "Number of packages", document.getElementById("deliveryPackageCount").value);
+                y = pdfDrawField(doc, y, "Booth number / letter", document.getElementById("deliveryBoothNumber").value);
+                y = pdfDrawMultilineField(doc, y, "Packages (weight & stage)", formatPackageWeightsForPdf("deliveryPackageWeights"));
+                y = pdfDrawField(doc, y, "Delivery date", formatDateForPdf(document.getElementById("deliveryDate").value));
+                y = pdfDrawField(doc, y, "Delivery time", getFormattedTime("deliveryTime"));
+                y = pdfDrawField(doc, y, "Final delivery location", document.getElementById("deliveryLocation").value);
             }
 
-            const lines = doc.splitTextToSize(formData, 180);
-            doc.setFontSize(11);
-            doc.text(lines, 10, 10);
-            doc.save("FedEx_Package_Request_Form.pdf");
+            y = pdfDrawSection(doc, y, "Payment");
+            y = pdfDrawField(doc, y, "Payment status", paymentStatus === "paid" ? "Paid" : "Will pay later");
+            y = pdfDrawField(doc, y, "FedEx account #", accountNumber);
+            y = pdfDrawField(doc, y, "Credit card on file", creditCardProvided);
+            y = pdfDrawField(
+                doc,
+                y,
+                "Note",
+                "If collected, card details are stored securely in the safe—not on this form."
+            );
+
+            pdfDrawFooter(doc);
+            doc.save(fileName);
 
             showStatus("PDF downloaded successfully.", "success");
             setTimeout(hideStatus, 4000);
@@ -1109,13 +1479,16 @@
             }
         });
         document.getElementById("deliveryPackageWeights").addEventListener("input", (e) => {
-            if (e.target.matches("input[data-package-weight]")) {
+            if (e.target.matches("input[data-package-weight], input[data-package-stage]")) {
+                e.target.closest(".package-detail-card")?.classList.remove("invalid");
                 e.target.closest(".package-weight-row")?.classList.remove("invalid");
+                e.target.closest(".package-stage-row")?.classList.remove("invalid");
                 document.querySelector('.field[data-field="deliveryPackageWeights"]')?.classList.remove("invalid");
             }
         });
 
         populateLocations();
+        populateTimeSelectOptions();
         updateRequestPanels();
         syncPickupPackageWeights();
         syncDeliveryPackageWeights();
